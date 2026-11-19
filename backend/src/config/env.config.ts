@@ -116,6 +116,23 @@ const EnvSchema = z
       .default(5000)
       .describe('Timeout (ms) for Stellar endpoint health checks'),
 
+    // Soroban RPC protocol version compatibility range (#980). The RPC node's reported
+    // `protocolVersion` (from `getNetwork()`) is checked against this range at startup and on
+    // every health check; a value outside it means the provider has upgraded past what this
+    // backend was tested against and response shapes may have silently changed underneath it.
+    SOROBAN_PROTOCOL_MIN_VERSION: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(20)
+      .describe('Lowest Soroban RPC protocol version this backend is tested against'),
+    SOROBAN_PROTOCOL_MAX_VERSION: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(22)
+      .describe('Highest Soroban RPC protocol version this backend is tested against'),
+
     // Redis Configuration
     REDIS_URL: z
       .string()
@@ -452,6 +469,13 @@ const EnvSchema = z
         'disabling PostgreSQL certificate verification is not allowed in production',
       );
     }
+    if (data.SOROBAN_PROTOCOL_MIN_VERSION > data.SOROBAN_PROTOCOL_MAX_VERSION) {
+      issue(
+        'SOROBAN_PROTOCOL_MIN_VERSION',
+        'SOROBAN_PROTOCOL_MIN_VERSION must not be greater than SOROBAN_PROTOCOL_MAX_VERSION',
+      );
+    }
+
     if (Boolean(data.SWAGGER_USER) !== Boolean(data.SWAGGER_PASSWORD)) {
       issue('SWAGGER_USER', 'SWAGGER_USER and SWAGGER_PASSWORD must be set together');
     }
